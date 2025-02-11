@@ -5,6 +5,7 @@ import Home from "./Pages/Home";
 import Appointment from "./Pages/Appointment";
 import AboutUs from "./Pages/AboutUs";
 import Register from "./Pages/Register";
+import ContactUs from "./Pages/ContactUs";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import { ToastContainer } from "react-toastify";
@@ -13,8 +14,7 @@ import axios from "axios";
 import { Context } from "./main";
 import Login from "./Pages/Login";
 const App = () => {
-  const { isAuthenticated, setIsAuthenticated, setUser } =
-    useContext(Context);
+  const { isAuthenticated, setIsAuthenticated, setUser } = useContext(Context);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -44,6 +44,7 @@ const App = () => {
           <Route path="/appointment" element={<Appointment />} />
           <Route path="/about" element={<AboutUs />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/contact" element={<ContactUs />} />
           <Route path="/login" element={<Login />} />
         </Routes>
         <Footer />

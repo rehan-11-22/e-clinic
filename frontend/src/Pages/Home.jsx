@@ -15,7 +15,7 @@ const Home = () => {
       />
       <Biography imageUrl={"/about.png"} />
       <Departments />
-      <MessageForm />
+      {/* <MessageForm /> */}
     </>
   );
 };

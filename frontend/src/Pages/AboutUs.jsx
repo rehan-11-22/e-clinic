@@ -1,6 +1,7 @@
 import React from "react";
 import Hero from "../components/Hero";
 import Biography from "../components/Biography";
+import Doctors from "../components/Doctors";
 const AboutUs = () => {
   return (
     <>
@@ -9,6 +10,7 @@ const AboutUs = () => {
         imageUrl={"/about.png"}
       />
       <Biography imageUrl={"/whoweare.png"} />
+      <Doctors />
     </>
   );
 };

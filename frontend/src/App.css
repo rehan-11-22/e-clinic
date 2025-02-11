@@ -587,3 +587,60 @@ input[type="time"]:before {
 footer .logo-img {
   width: 100%;
 }
+
+/**************************** doctors.css*******************************************/
+
+.doctor-page {
+  padding: 0px 100px;
+  text-align: center;
+  background-color: #e5e5e5;
+}
+
+.doctor-page h2 {
+  /* color: gray; */
+  letter-spacing: 4px;
+  margin-bottom: 30px;
+}
+
+/* Styles for the doctor banner */
+.doctor-banner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: start;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Styles for each doctor card */
+.doctor-card {
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  width: 300px;
+}
+
+.doctor-card > img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 5px solid #beb9b9 !important;
+}
+
+.doctor-details {
+  padding: 0 15px 15px;
+  text-align: left;
+}
+
+.doctor-details p {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 5px 0;
+}
+
+.doctor-details span {
+  font-weight: bold;
+  color: #333;
+}
