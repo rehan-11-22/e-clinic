@@ -591,34 +591,48 @@ footer .logo-img {
 /**************************** doctors.css*******************************************/
 
 .doctor-page {
-  padding: 0px 100px;
+  padding: 1rem;
   text-align: center;
   background-color: #e5e5e5;
 }
 
+@media (min-width: 768px) {
+  .doctor-page {
+    padding: 0px 60px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .doctor-page {
+    padding: 0px 100px;
+  }
+}
+
 .doctor-page h2 {
-  /* color: gray; */
   letter-spacing: 4px;
   margin-bottom: 30px;
 }
 
-/* Styles for the doctor banner */
+/* Responsive doctor grid */
 .doctor-banner {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: start;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
-  padding: 20px;
+  padding: 20px 0;
 }
 
-/* Styles for each doctor card */
+/* Doctor card */
 .doctor-card {
   background-color: #fff;
-  padding: 40px;
+  padding: 30px;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  width: 300px;
+  transition: transform 0.2s ease;
+}
+
+.doctor-card:hover {
+  transform: scale(1.02);
 }
 
 .doctor-card > img {
@@ -630,7 +644,7 @@ footer .logo-img {
 }
 
 .doctor-details {
-  padding: 0 15px 15px;
+  padding: 0 10px;
   text-align: left;
 }
 
@@ -644,3 +658,68 @@ footer .logo-img {
   font-weight: bold;
   color: #333;
 }
+
+/* chatbot */
+/* .chatbot-icon {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.chatbot-icon img {
+  width: 60px;
+  height: 60px;
+}
+
+.chatbot-container {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 300px;
+  max-height: 400px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.chatbot-header {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chatbot-body {
+  padding: 10px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.chatbot-input {
+  padding: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.chatbot-input input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+}
+
+.chat-message.bot {
+  background-color: #f1f1f1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin: 5px 0;
+} */

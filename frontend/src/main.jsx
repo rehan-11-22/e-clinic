@@ -1,6 +1,7 @@
 import React, { createContext, useState } from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+import { DoctorsProvider } from "./context/DoctorsContext.jsx";
 
 export const Context = createContext({
   isAuthenticated: false,
@@ -19,7 +20,9 @@ const AppWrapper = () => {
         setUser,
       }}
     >
-      <App />
+      <DoctorsProvider>
+        <App />
+      </DoctorsProvider>
     </Context.Provider>
   );
 };

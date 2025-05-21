@@ -2,9 +2,12 @@ import mongoose from "mongoose";
 
 export const dbConnection = () => {
   mongoose
-    .connect(process.env.MONGO_URI, {
-      dbName: "e-clinic",
-    })
+    .connect(
+      "mongodb+srv://eclinic:eclinic@e-clinic.hdvka.mongodb.net/?retryWrites=true&w=majority&appName=e-clinic",
+      {
+        dbName: "e-clinic",
+      }
+    )
     .then(() => {
       console.log("Connected to database!");
     })
