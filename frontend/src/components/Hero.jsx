@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const Hero = ({ title, imageUrl }) => {
+const Hero = ({ title, imageUrl, paragrapgh }) => {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const toggleChat = () => {
@@ -12,14 +12,7 @@ const Hero = ({ title, imageUrl }) => {
       <div className="hero container" style={{ overflowY: "hidden" }}>
         <div className="banner">
           <h1>{title}</h1>
-          <p>
-            ZeeCare Medical Institute is a state-of-the-art facility dedicated
-            to providing comprehensive healthcare services with compassion and
-            expertise. Our team of skilled professionals is committed to
-            delivering personalized care tailored to each patient's needs. At
-            ZeeCare, we prioritize your well-being, ensuring a harmonious
-            journey towards optimal health and wellness.
-          </p>
+          <p>{paragrapgh}</p>
         </div>
         <div className="banner">
           <img src={imageUrl} alt="hero" className="animated-image" />
@@ -47,7 +40,7 @@ const Hero = ({ title, imageUrl }) => {
         <div className="zeecare-chat-modal">
           <div className="zeecare-chat-modal-content">
             <div className="zeecare-chat-modal-header">
-              <h3>Zee Assistant (Beta)</h3>
+              <h3>E-Cure Assistant (Beta)</h3>
               <button className="zeecare-close-btn" onClick={toggleChat}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -62,9 +55,9 @@ const Hero = ({ title, imageUrl }) => {
             </div>
             <div className="zeecare-chat-modal-body">
               <p>
-                Hi, I'm ZeeCare's virtual assistant. I can answer common
-                questions & help you around our site. I am still in development
-                and learning how to best offer guidance. I can not assist with
+                Hi, I'm E-Cure virtual assistant. I can answer common questions
+                & help you around our site. I am still in development and
+                learning how to best offer guidance. I can not assist with
                 scheduling your appointment or access your account details if
                 you are a current patient.
               </p>

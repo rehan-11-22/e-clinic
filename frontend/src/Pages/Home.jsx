@@ -8,12 +8,13 @@ const Home = () => {
   return (
     <>
       <Hero
-        title={
-          "Welcome to ZeeCare Medical Institute | Your Trusted Healthcare Provider"
+        title={"Welcome to E-Cure Hub | Your Trusted Healthcare Provider"}
+        imageUrl={"/banner.png"}
+        paragrapgh={
+          "E-Cure Hub Medical is an advanced online platform designed to simplify your healthcare journey. Whether you're booking appointments or seeking instant support through our smart chatbot, ZeeCare is here to make quality healthcare more accessible. Our network of trusted medical professionals is committed to providing personalized care, ensuring you get the guidance and attention you deserve—right from the comfort of your home."
         }
-        imageUrl={"/hero.png"}
       />
-      <Biography imageUrl={"/about.png"} />
+      <Biography imageUrl={"/bio2.jpg"} />
       <Departments />
       {/* <MessageForm /> */}
     </>

@@ -1,6 +1,6 @@
 import React from "react";
 
-const Biography = ({imageUrl}) => {
+const Biography = ({ imageUrl }) => {
   return (
     <>
       <div className="container biography">
@@ -11,26 +11,24 @@ const Biography = ({imageUrl}) => {
           <p>Biography</p>
           <h3>Who We Are</h3>
           <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ducimus
-            blanditiis sequi aperiam. Debitis fugiat harum ex maxime illo
-            consequatur mollitia voluptatem omnis nihil nesciunt beatae esse
-            ipsam, sapiente totam aspernatur porro ducimus aperiam nisi. Ex
-            magnam voluptatum consectetur reprehenderit fugiat recusandae aut
-            similique illum natus velit, praesentium nostrum nesciunt. Deleniti,
-            nesciunt laboriosam totam iusto!
+            E-Cure Hub is a digital healthcare platform dedicated to simplifying
+            how people access medical support. Built with the vision of making
+            healthcare more accessible and efficient, E-Cure Hub allows users to
+            seamlessly book doctor appointments online and receive instant
+            guidance through an intelligent, AI-powered chatbot.
           </p>
-          <p>We are all in 2024!</p>
-          <p>We are working on a MERN STACK PROJECT.</p>
           <p>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolores
-            assumenda exercitationem accusamus sit repellendus quo optio dolorum
-            corporis corrupti. Quas similique vel minima veniam tenetur
-            obcaecati atque magni suscipit laboriosam! Veniam vitae minus nihil
-            cupiditate natus provident. Ex illum quasi pariatur odit nisi
-            voluptas illo qui ipsum mollitia. Libero, assumenda?
+            Founded on the principles of trust, innovation, and patient-centric
+            care, E-Cure Hub connects individuals with certified healthcare
+            professionals across various specialties—right from the comfort of
+            their home. Whether you're looking for the right doctor, need help
+            understanding symptoms, or simply want quick answers, E-Cure Hub is
+            your reliable virtual companion in your health journey.
           </p>
-          <p>Lorem ipsum dolor sit amet!</p>
-          <p>Coding is fun!</p>
+          <p>
+            E-Cure Hub Medical continues to evolve as a smart, secure, and
+            user-friendly digital solution designed for modern healthcare needs.
+          </p>
         </div>
       </div>
     </>

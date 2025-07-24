@@ -55,12 +55,14 @@ const Register = () => {
   return (
     <>
       <div className="container form-component register-form">
-        <h2>Sign Up</h2>
-        <p>Please Sign Up To Continue</p>
-        <p>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat culpa
-          voluptas expedita itaque ex, totam ad quod error?
-        </p>
+        <div className="content">
+          <h2>Sign Up</h2>
+          <p>Please Sign Up To Continue</p>
+          <p>
+            Sign up to book appointments and access personalized
+            healthcare—quick, easy, and secure.
+          </p>
+        </div>
         <form onSubmit={handleRegistration}>
           <div>
             <input
