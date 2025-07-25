@@ -186,6 +186,130 @@ export const getAllDoctors = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+// update the specific doctor
+
+export const updateDoctor = catchAsyncErrors(async (req, res, next) => {
+  const { id } = req.params;
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    nic,
+    dob,
+    gender,
+    doctorDepartment,
+  } = req.body;
+
+  // Find the doctor by ID
+  let doctor = await User.findById(id);
+
+  if (!doctor) {
+    return next(new ErrorHandler("Doctor not found", 404));
+  }
+
+  if (doctor.role !== "Doctor") {
+    return next(new ErrorHandler("User is not a doctor", 400));
+  }
+
+  // Check if email is being updated and if it's already taken
+  if (email && email !== doctor.email) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return next(new ErrorHandler("Email already in use", 400));
+    }
+  }
+
+  // Handle avatar update if provided
+  if (req.files && req.files.docAvatar) {
+    const { docAvatar } = req.files;
+    const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
+
+    if (!allowedFormats.includes(docAvatar.mimetype)) {
+      return next(new ErrorHandler("File format not supported", 400));
+    }
+
+    // Delete old avatar from Cloudinary if exists
+    if (doctor.docAvatar?.public_id) {
+      await cloudinary.uploader.destroy(doctor.docAvatar.public_id);
+    }
+
+    // Upload new avatar
+    const cloudinaryResponse = await cloudinary.uploader.upload(
+      docAvatar.tempFilePath
+    );
+
+    if (!cloudinaryResponse || cloudinaryResponse.error) {
+      console.error(
+        "Cloudinary Error:",
+        cloudinaryResponse.error || "Unknown Cloudinary error"
+      );
+      return next(
+        new ErrorHandler("Failed to upload doctor avatar to Cloudinary", 500)
+      );
+    }
+
+    doctor.docAvatar = {
+      public_id: cloudinaryResponse.public_id,
+      url: cloudinaryResponse.secure_url,
+    };
+  }
+
+  // Update doctor fields
+  if (firstName) doctor.firstName = firstName;
+  if (lastName) doctor.lastName = lastName;
+  if (email) doctor.email = email;
+  if (phone) doctor.phone = phone;
+  if (nic) doctor.nic = nic;
+  if (dob) doctor.dob = dob;
+  if (gender) doctor.gender = gender;
+  if (doctorDepartment) doctor.doctorDepartment = doctorDepartment;
+
+  // Save the updated doctor
+  await doctor.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Doctor updated successfully",
+    doctor,
+  });
+});
+
+// delete doctor by id
+
+export const deleteDoctor = catchAsyncErrors(async (req, res, next) => {
+  const { id } = req.params;
+
+  // Find the doctor by ID
+  const doctor = await User.findById(id);
+
+  if (!doctor) {
+    return next(new ErrorHandler("Doctor not found", 404));
+  }
+
+  if (doctor.role !== "Doctor") {
+    return next(new ErrorHandler("User is not a doctor", 400));
+  }
+
+  // Delete doctor's avatar from Cloudinary if exists
+  if (doctor.docAvatar?.public_id) {
+    await cloudinary.uploader
+      .destroy(doctor.docAvatar.public_id)
+      .catch((error) => {
+        console.error("Failed to delete avatar from Cloudinary:", error);
+        // Continue with deletion even if avatar deletion fails
+      });
+  }
+
+  // Delete the doctor from database
+  await User.findByIdAndDelete(id);
+
+  res.status(200).json({
+    success: true,
+    message: "Doctor deleted successfully",
+  });
+});
+
 export const getUserDetails = catchAsyncErrors(async (req, res, next) => {
   const user = req.user;
   res.status(200).json({

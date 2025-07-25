@@ -1,10 +1,126 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Send, Mic, MicOff, X } from "lucide-react";
 
 const Hero = ({ title, imageUrl, paragrapgh }) => {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   const toggleChat = () => {
     setIsChatOpen(!isChatOpen);
+  };
+
+  // Initialize speech recognition
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = "en-US";
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput((prev) => prev + " " + transcript);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  // Auto-scroll to bottom of messages
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+
+    return () => clearTimeout(timeout);
+  }, [messages]);
+
+  const toggleSpeechRecognition = () => {
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error("Error starting speech recognition:", error);
+        setIsListening(false);
+      }
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage = { id: Date.now(), role: "user", content: input };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("http://localhost:4000/api/medical-query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ question: input }),
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch data");
+
+      const data = await res.json();
+
+      const assistantMessage = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: data.answer,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error("Query error:", err);
+      setError(err.message || "An error occurred");
+    } finally {
+      setIsLoading(false);
+      setInput("");
+      inputRef.current?.focus();
+    }
   };
 
   return (
@@ -40,60 +156,111 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
         <div className="zeecare-chat-modal">
           <div className="zeecare-chat-modal-content">
             <div className="zeecare-chat-modal-header">
-              <h3>E-Cure Assistant (Beta)</h3>
+              <h3>E-Cure Medical Assistant</h3>
               <button className="zeecare-close-btn" onClick={toggleChat}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="#000000"
-                >
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                </svg>
+                <X size={20} color="white" />
               </button>
             </div>
+
             <div className="zeecare-chat-modal-body">
-              <p>
-                Hi, I'm E-Cure virtual assistant. I can answer common questions
-                & help you around our site. I am still in development and
-                learning how to best offer guidance. I can not assist with
-                scheduling your appointment or access your account details if
-                you are a current patient.
-              </p>
-
-              <p>
-                If you are a current patient or you need to talk to a person at
-                Brightside immediately, please call +1 833 910 0702.
-              </p>
-
-              <p>Otherwise, here are some ways to get started:</p>
-
-              <div className="zeecare-chat-options">
-                <div className="zeecare-chat-option">
-                  <input type="checkbox" id="zeecare-option1" />
-                  <label htmlFor="zeecare-option1">How do I get started?</label>
-                </div>
-                <div className="zeecare-chat-option">
-                  <input type="checkbox" id="zeecare-option2" defaultChecked />
-                  <label htmlFor="zeecare-option2">Terms of Service</label>
-                </div>
+              {/* Messages Area */}
+              <div className="zeecare-messages-container">
+                {messages.length === 0 ? (
+                  <div className="zeecare-welcome-message">
+                    <p>
+                      Hi! I'm your E-Cure medical assistant. I can help you
+                      with:
+                    </p>
+                    <ul>
+                      <li>💊 Medical information</li>
+                      <li>❓ General healthcare questions</li>
+                    </ul>
+                    <p>
+                      <strong>Try asking:</strong> "What are the symptoms of
+                      diabetes?" or "What is hypertension?"
+                    </p>
+                  </div>
+                ) : (
+                  <div className="zeecare-messages">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`zeecare-message ${
+                          message.role === "user" ? "user" : "assistant"
+                        }`}
+                      >
+                        <div className="zeecare-message-content">
+                          {message.content}
+                        </div>
+                      </div>
+                    ))}
+                    {isLoading && (
+                      <div className="zeecare-message assistant">
+                        <div className="zeecare-message-content zeecare-loading">
+                          <span className="zeecare-typing-indicator">⚡</span>
+                          Processing query...
+                        </div>
+                      </div>
+                    )}
+                    {error && (
+                      <div className="zeecare-message error">
+                        <div className="zeecare-message-content">
+                          Error: {error}
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
               </div>
 
-              <div className="zeecare-chat-input">
-                <input type="text" placeholder="Type your message here..." />
-                <button className="zeecare-send-btn">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="#ffffff"
-                  >
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                  </svg>
-                </button>
-              </div>
+              {/* Input Area */}
+              <form onSubmit={handleSubmit} className="zeecare-chat-input-form">
+                <div className="zeecare-input-wrapper">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={input}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask about medical information..."
+                    disabled={isLoading}
+                    className="zeecare-text-input"
+                  />
+                  <div className="zeecare-input-buttons">
+                    <button
+                      type="button"
+                      onClick={toggleSpeechRecognition}
+                      disabled={
+                        !(
+                          "webkitSpeechRecognition" in window ||
+                          "SpeechRecognition" in window
+                        )
+                      }
+                      className={`zeecare-mic-btn ${
+                        isListening ? "listening" : ""
+                      }`}
+                      title={
+                        isListening ? "Stop listening" : "Start voice input"
+                      }
+                    >
+                      {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading || !input.trim()}
+                      className="zeecare-send-btn"
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
+                </div>
+                {isListening && (
+                  <div className="zeecare-listening-indicator">
+                    <span className="zeecare-pulse">●</span> Listening...
+                  </div>
+                )}
+              </form>
             </div>
           </div>
         </div>
@@ -102,7 +269,7 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
       <style jsx>{`
         /* Hero-specific styles remain unchanged */
 
-        /* Namespaced chatbot styles to avoid conflicts */
+        /* Enhanced chatbot styles */
         .zeecare-chat-icon {
           position: fixed;
           bottom: 30px;
@@ -140,14 +307,14 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
 
         .zeecare-chat-modal-content {
           width: 90%;
-          max-width: 400px;
-          height: 80%;
-          max-height: 600px;
+          max-width: 450px;
+          height: 85%;
+          max-height: 650px;
           margin-right: 30px;
           background-color: white;
-          border-radius: 10px;
+          border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
           display: flex;
           flex-direction: column;
         }
@@ -156,85 +323,252 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 15px 20px;
-          background-color: #4a6bff;
+          padding: 16px 20px;
+          background: linear-gradient(135deg, #4a6bff 0%, #3a5bef 100%);
           color: white;
         }
 
         .zeecare-chat-modal-header h3 {
           margin: 0;
-          font-size: 18px;
-          font-weight: 500;
+          font-size: 16px;
+          font-weight: 600;
         }
 
         .zeecare-close-btn {
           background: none;
           border: none;
           cursor: pointer;
-          padding: 5px;
+          padding: 4px;
           display: flex;
           align-items: center;
           justify-content: center;
+          border-radius: 4px;
+          transition: background-color 0.2s;
         }
 
-        .zeecare-close-btn svg {
-          fill: white;
+        .zeecare-close-btn:hover {
+          background-color: rgba(255, 255, 255, 0.1);
         }
 
         .zeecare-chat-modal-body {
-          padding: 20px;
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+
+        .zeecare-messages-container {
           flex: 1;
           overflow-y: auto;
+          padding: 16px;
         }
 
-        .zeecare-chat-modal-body p {
-          margin-bottom: 15px;
+        .zeecare-welcome-message {
+          color: #374151;
           font-size: 14px;
-          line-height: 1.5;
+          line-height: 1.6;
+          padding: 20px;
+          background: linear-gradient(135deg, #f8faff 0%, #f1f5ff 100%);
+          border-radius: 12px;
+          margin: 10px 0;
         }
 
-        .zeecare-chat-options {
-          margin: 20px 0;
+        .zeecare-welcome-message p:first-child {
+          font-weight: 600;
+          color: #1f2937;
+          margin-bottom: 16px;
+          text-align: center;
         }
 
-        .zeecare-chat-option {
+        .zeecare-welcome-message ul {
+          background: white;
+          border-radius: 8px;
+          padding: 16px 20px;
+          margin: 16px 0;
+          border-left: 4px solid #4a6bff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .zeecare-welcome-message li {
+          margin: 8px 0;
+          color: #4b5563;
+          font-size: 13px;
+        }
+
+        .zeecare-welcome-message p:last-child {
+          margin-top: 16px;
+          padding: 12px;
+          background: white;
+          border-radius: 8px;
+          font-size: 13px;
+          color: #6b7280;
+          border: 1px solid #e5e7eb;
+        }
+
+        .zeecare-messages {
           display: flex;
-          align-items: center;
-          margin-bottom: 10px;
+          flex-direction: column;
+          gap: 12px;
         }
 
-        .zeecare-chat-option input {
-          margin-right: 10px;
-        }
-
-        .zeecare-chat-input {
+        .zeecare-message {
           display: flex;
-          margin-top: 20px;
         }
 
-        .zeecare-chat-input input {
-          flex: 1;
-          padding: 10px 15px;
-          border: 1px solid #ddd;
-          border-radius: 5px;
-          font-size: 14px;
+        .zeecare-message.user {
+          justify-content: flex-end;
         }
 
-        .zeecare-send-btn {
-          background-color: #4a6bff;
-          border: none;
-          border-radius: 5px;
-          padding: 0 15px;
-          margin-left: 10px;
-          cursor: pointer;
-          transition: background-color 0.3s;
-          display: flex;
-          align-items: center;
+        .zeecare-message.assistant {
+          justify-content: flex-start;
+        }
+
+        .zeecare-message.error {
           justify-content: center;
         }
 
-        .zeecare-send-btn:hover {
+        .zeecare-message-content {
+          max-width: 80%;
+          padding: 10px 14px;
+          border-radius: 16px;
+          font-size: 13px;
+          line-height: 1.4;
+          word-wrap: break-word;
+        }
+
+        .zeecare-message.user .zeecare-message-content {
+          background-color: #4a6bff;
+          color: white;
+          border-bottom-right-radius: 4px;
+        }
+
+        .zeecare-message.assistant .zeecare-message-content {
+          background-color: #f1f3f4;
+          color: #333;
+          border-bottom-left-radius: 4px;
+        }
+
+        .zeecare-message.error .zeecare-message-content {
+          background-color: #fee;
+          color: #c53030;
+          border: 1px solid #fed7d7;
+        }
+
+        .zeecare-loading .zeecare-typing-indicator {
+          animation: pulse 1.5s infinite;
+          margin-right: 8px;
+        }
+
+        .zeecare-chat-input-form {
+          padding: 16px;
+          border-top: 1px solid #e5e7eb;
+          background-color: #fafafa;
+        }
+
+        .zeecare-input-wrapper {
+          display: flex;
+          gap: 8px;
+          align-items: flex-end;
+        }
+
+        .zeecare-text-input {
+          flex: 1;
+          padding: 10px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 20px;
+          font-size: 13px;
+          outline: none;
+          transition: border-color 0.2s;
+          resize: none;
+        }
+
+        .zeecare-text-input:focus {
+          border-color: #4a6bff;
+          box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.1);
+        }
+
+        .zeecare-text-input:disabled {
+          background-color: #f9fafb;
+          opacity: 0.7;
+        }
+
+        .zeecare-input-buttons {
+          display: flex;
+          gap: 4px;
+        }
+
+        .zeecare-mic-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: none;
+          background-color: #f1f3f4;
+          color: #666;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .zeecare-mic-btn:hover {
+          background-color: #e5e7eb;
+        }
+
+        .zeecare-mic-btn.listening {
+          background-color: #ef4444;
+          color: white;
+        }
+
+        .zeecare-mic-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .zeecare-send-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: none;
+          background-color: #4a6bff;
+          color: white;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s;
+        }
+
+        .zeecare-send-btn:hover:not(:disabled) {
           background-color: #3a5bef;
+        }
+
+        .zeecare-send-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .zeecare-listening-indicator {
+          margin-top: 8px;
+          font-size: 11px;
+          color: #4a6bff;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .zeecare-pulse {
+          animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 0.4;
+          }
+          50% {
+            opacity: 1;
+          }
         }
 
         @media (max-width: 768px) {
@@ -247,8 +581,13 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
 
           .zeecare-chat-modal-content {
             width: 95%;
+            height: 80%;
             margin-right: 10px;
-            height: 70%;
+          }
+
+          .zeecare-message-content {
+            max-width: 90%;
+            font-size: 12px;
           }
         }
       `}</style>
