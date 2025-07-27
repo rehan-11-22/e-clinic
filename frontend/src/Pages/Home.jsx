@@ -11,7 +11,7 @@ const Home = () => {
         title={"Welcome to E-Cure Hub | Your Trusted Healthcare Provider"}
         imageUrl={"/banner.png"}
         paragrapgh={
-          "E-Cure Hub Medical is an advanced online platform designed to simplify your healthcare journey. Whether you're booking appointments or seeking instant support through our smart chatbot, ZeeCare is here to make quality healthcare more accessible. Our network of trusted medical professionals is committed to providing personalized care, ensuring you get the guidance and attention you deserve—right from the comfort of your home."
+          "E-Cure Hub Medical is an advanced online platform designed to simplify your healthcare journey. Whether you're booking appointments or seeking instant support through our smart chatbot, E-Cure Hub is here to make quality healthcare more accessible. Our network of trusted medical professionals is committed to providing personalized care, ensuring you get the guidance and attention you deserve right from the comfort of your home."
         }
       />
       <Biography imageUrl={"/bio2.jpg"} />

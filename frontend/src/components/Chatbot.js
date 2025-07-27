@@ -9,7 +9,7 @@ const ChatBot = ({ onClose }) => {
   return (
     <div className="chatbot-container">
       <div className="chatbot-header">
-        <h4>ZeeCare Assistant</h4>
+        <h4>E-Cure Assistant</h4>
         <button className="chatbot-close" onClick={onClose}>
           <img src="/chatbot_icon.png" alt="close" />
         </button>

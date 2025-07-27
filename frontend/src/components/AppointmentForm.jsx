@@ -53,7 +53,7 @@ const AppointmentForm = () => {
           lastName,
           email,
           phone,
-          nic,
+          // nic,
           dob,
           gender,
           appointment_date: appointmentDate,
@@ -73,7 +73,7 @@ const AppointmentForm = () => {
         setLastName(""),
         setEmail(""),
         setPhone(""),
-        setNic(""),
+        // setNic(""),
         setDob(""),
         setGender(""),
         setAppointmentDate(""),
@@ -120,33 +120,7 @@ const AppointmentForm = () => {
               onChange={(e) => setPhone(e.target.value)}
             />
           </div>
-          <div>
-            <input
-              type="number"
-              placeholder="NIC"
-              value={nic}
-              onChange={(e) => setNic(e.target.value)}
-            />
-            <input
-              type="date"
-              placeholder="Date of Birth"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-            />
-          </div>
-          <div>
-            <select value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-            <input
-              type="date"
-              placeholder="Appointment Date"
-              value={appointmentDate}
-              onChange={(e) => setAppointmentDate(e.target.value)}
-            />
-          </div>
+
           <div>
             <select
               value={department}
@@ -185,6 +159,33 @@ const AppointmentForm = () => {
                   </option>
                 ))}
             </select>
+          </div>
+          <div>
+            <select value={gender} onChange={(e) => setGender(e.target.value)}>
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+            <input
+              type="date"
+              placeholder="Appointment Date"
+              value={appointmentDate}
+              onChange={(e) => setAppointmentDate(e.target.value)}
+            />
+          </div>
+          <div>
+            {/* <input
+              type="number"
+              placeholder="NIC"
+              value={nic}
+              onChange={(e) => setNic(e.target.value)}
+            /> */}
+            <input
+              type="date"
+              placeholder="Date of Birth"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+            />
           </div>
           <textarea
             rows="10"

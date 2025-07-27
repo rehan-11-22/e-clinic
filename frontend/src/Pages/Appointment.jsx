@@ -9,7 +9,7 @@ const Appointment = () => {
         title={"Schedule Your Appointment at E-Cure Hub"}
         imageUrl={"/appointment.png"}
         paragrapgh={
-          "Welcome to the Appointments section of E-Cure Hub! Here, you can quickly find and schedule appointments with trusted healthcare professionals across a wide range of specialties. Whether you're looking for a general consultation or a specific expert, our platform makes it easy to choose a time that works for you. With just a few clicks, you’re on your way to personalized care—convenient, fast, and right at your fingertips."
+          "Welcome to the Appointments section of E-Cure Hub! Here, you can quickly find and schedule appointments with trusted healthcare professionals across a wide range of specialties. Whether you're looking for a general consultation or a specific expert, our platform makes it easy to choose a time that works for you. With just a few clicks, you’re on your way to personalized care convenient, fast, and right at your fingertips."
         }
       />
       <AppointmentForm />

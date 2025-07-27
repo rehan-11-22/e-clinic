@@ -24,7 +24,7 @@ const Register = () => {
       await axios
         .post(
           "http://localhost:4000/api/v1/user/patient/register",
-          { firstName, lastName, email, phone, nic, dob, gender, password },
+          { firstName, lastName, email, phone, dob, gender, password },
           {
             withCredentials: true,
             headers: { "Content-Type": "application/json" },
@@ -38,7 +38,7 @@ const Register = () => {
           setLastName("");
           setEmail("");
           setPhone("");
-          setNic("");
+          // setNic("");
           setDob("");
           setGender("");
           setPassword("");
@@ -59,8 +59,8 @@ const Register = () => {
           <h2>Sign Up</h2>
           <p>Please Sign Up To Continue</p>
           <p>
-            Sign up to book appointments and access personalized
-            healthcare—quick, easy, and secure.
+            Sign up to book appointments and access personalized healthcare
+            quick, easy, and secure.
           </p>
         </div>
         <form onSubmit={handleRegistration}>
@@ -93,20 +93,6 @@ const Register = () => {
             />
           </div>
           <div>
-            <input
-              type="number"
-              placeholder="NIC"
-              value={nic}
-              onChange={(e) => setNic(e.target.value)}
-            />
-            <input
-              type={"date"}
-              placeholder="Date of Birth"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-            />
-          </div>
-          <div>
             <select value={gender} onChange={(e) => setGender(e.target.value)}>
               <option value="">Select Gender</option>
               <option value="Male">Male</option>
@@ -119,6 +105,21 @@ const Register = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          <div>
+            {/* <input
+              type="number"
+              placeholder="NIC"
+              value={nic}
+              onChange={(e) => setNic(e.target.value)}
+            /> */}
+            <input
+              type={"date"}
+              placeholder="Date of Birth"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+            />
+          </div>
+
           <div
             style={{
               gap: "10px",

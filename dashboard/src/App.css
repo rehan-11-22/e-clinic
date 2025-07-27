@@ -477,7 +477,7 @@ body {
 
 .doctors .banner .card .edit-btn:hover {
   background-color: #45a049;
-  transform: scale(1.1);
+  /* transform: scale(1.1); */
 }
 
 .doctors .banner .card .delete-btn {
@@ -487,7 +487,7 @@ body {
 
 .doctors .banner .card .delete-btn:hover {
   background-color: #da190b;
-  transform: scale(1.1);
+  /* transform: scale(1.1); */
 }
 
 .doctors .banner .card img {
