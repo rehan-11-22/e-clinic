@@ -8,6 +8,7 @@ import { errorMiddleware } from "./middlewares/error.js";
 import messageRouter from "./router/messageRouter.js";
 import userRouter from "./router/userRouter.js";
 import appointmentRouter from "./router/appointmentRouter.js";
+import emailRouter from "./router/emailRouter.js";
 import sql from "mssql";
 import { AzureOpenAI } from "openai";
 
@@ -56,6 +57,7 @@ app.use(
 app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/appointment", appointmentRouter);
+app.use("/api/v1/email", emailRouter);
 
 // API Endpoint for processing questions
 app.post("/api/medical-query", async (req, res) => {

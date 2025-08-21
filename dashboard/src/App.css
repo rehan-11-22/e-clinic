@@ -158,7 +158,7 @@ body {
     padding: 30px 0;
   }
 }
-
+/* dashboard */
 .dashboard {
   display: flex;
   flex-direction: column;
@@ -285,6 +285,209 @@ body {
 }
 .dashboard .banner table tbody td {
   padding: 12px 0;
+}
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.appointment-info {
+  margin-bottom: 20px;
+}
+
+.appointment-info p {
+  margin: 5px 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.form-group input[type="date"],
+.form-group input[type="time"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.time-input-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.time-input-group input {
+  flex: 1;
+}
+
+.add-time-btn {
+  padding: 8px 15px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-time-btn.accepted {
+  background-color: #4caf50;
+}
+
+.add-time-btn.pending {
+  background-color: #ff9800;
+}
+
+.selected-times {
+  margin-top: 15px;
+}
+
+.selected-times h5 {
+  margin-bottom: 10px;
+}
+
+.times-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.time-chip {
+  padding: 6px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-chip.accepted {
+  background-color: #e8f5e8;
+  border: 1px solid #4caf50;
+}
+
+.time-chip.pending {
+  background-color: #fff3e0;
+  border: 1px solid #ff9800;
+}
+
+.remove-time {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.info-text {
+  font-size: 14px;
+  color: #666;
+}
+
+.reject-confirmation p {
+  color: #666;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.confirm-btn {
+  padding: 10px 20px;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.confirm-btn.accepted {
+  background-color: #4caf50;
+}
+
+.confirm-btn.pending {
+  background-color: #ff9800;
+}
+
+.confirm-btn.rejected {
+  background-color: #f44336;
+}
+
+/* Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+}
+
+.value-pending {
+  color: #ffa500;
+}
+
+.value-accepted {
+  color: #4caf50;
+}
+
+.value-rejected {
+  color: #f44336;
+}
+
+.green {
+  color: #4caf50;
+}
+
+.red {
+  color: #f44336;
 }
 @media (max-width: 1376px) {
   .dashboard .banner:first-child .firstBox .content div,

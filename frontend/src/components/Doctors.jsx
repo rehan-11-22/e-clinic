@@ -19,7 +19,7 @@ const Doctors = () => {
   const { doctors } = useDoctors();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
-  const [visibleCount, setVisibleCount] = useState(6); // Show 6 doctors initially
+  const [visibleCount, setVisibleCount] = useState(8); // Show 6 doctors initially
 
   // Filter logic
   const filteredDoctors = doctors.filter((doc) => {
