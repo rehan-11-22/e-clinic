@@ -13,6 +13,7 @@ const departments = [
   "Physical Therapy",
   "Dermatology",
   "ENT",
+  "Veterinary",
 ];
 
 const Doctors = () => {

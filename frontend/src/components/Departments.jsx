@@ -30,7 +30,7 @@ const Departments = () => {
     },
     {
       name: "Physical Therapy",
-      imageUrl: "/departments/therapy.jpg",
+      imageUrl: "/departments/physical-therapy.jpg",
     },
     {
       name: "Dermatology",

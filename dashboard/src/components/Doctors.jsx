@@ -319,6 +319,7 @@ const Doctors = () => {
                     <option value="Physical Therapy">Physical Therapy</option>
                     <option value="Dermatology">Dermatology</option>
                     <option value="ENT">ENT</option>
+                    <option value="ENT">Veterinary</option>
                   </select>
                 </div>
               </div>
