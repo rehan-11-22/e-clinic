@@ -69,6 +69,17 @@ app.post("/api/medical-query", async (req, res) => {
 
     const classification = await classifyQuestion(question);
 
+    // Handle non-medical questions
+    if (classification === "non-medical") {
+      return res.json({
+        type: "non-medical",
+        question,
+        answer:
+          "I'm a medical assistant designed to help with health and medical-related questions only. Please ask about medical conditions, symptoms, treatments, healthcare providers, or other health-related topics.",
+        tab: "chat",
+      });
+    }
+
     if (classification === "database") {
       // Generate SQL
       const sql = await englishToSql(question);
@@ -102,7 +113,7 @@ app.post("/api/medical-query", async (req, res) => {
         });
       }
     } else {
-      // General health answer
+      // General health answer (already validated as medical)
       const answer = await answerHealthQuestion(question);
       res.json({
         type: "health",
@@ -128,10 +139,76 @@ app.get("/api/health", (req, res) => {
 app.get("/", (req, res) => {
   res.send("Welcome to the homepage!");
 });
+
 dbConnection();
 
 app.use(errorMiddleware);
 export default app;
+
+// Function to check if a question is medical/health-related
+async function isMedicalQuestion(question) {
+  const prompt = `
+  You are an expert medical content validator. Determine if the following question is related to:
+  - Medical conditions, diseases, or health issues
+  - Symptoms or medical signs
+  - Treatments, medications, or therapies  
+  - Medical procedures or diagnostics
+  - Healthcare providers, specialties, or medical facilities
+  - Anatomy, physiology, or medical science
+  - Public health or preventive medicine
+  - Veterinary medicine or animal health
+  - Medical coding (ICD, CPT)
+  - Healthcare administration or medical databases
+
+  Respond only with "yes" if the question is medical/health-related, or "no" if it's not.
+  
+  Examples of medical questions: "What are symptoms of diabetes?", "How is pneumonia treated?", "What doctors specialize in heart conditions?"
+  Examples of non-medical questions: "What's the weather?", "How to cook pasta?", "What's the capital of France?"
+
+  Question: ${question}
+  `;
+
+  const response = await openAIClient.chat.completions.create({
+    model: "gpt-35-turbo",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0,
+  });
+
+  return response.choices[0].message.content.trim().toLowerCase() === "yes";
+}
+
+// Determine whether the question is a database query or a health query using AI
+async function classifyQuestion(question) {
+  // First check if it's medical at all
+  const isMedical = await isMedicalQuestion(question);
+
+  if (!isMedical) {
+    return "non-medical"; // Return a special classification for non-medical questions
+  }
+
+  const prompt = `
+You are an expert in medical software and healthcare knowledge. Your task is to classify the following medical/health question.
+
+Respond only with:
+- "database" if the question should be answered using a SQL query from a medical database (like finding doctors, appointments, diseases, symptoms data),
+- "health" if the question is about general health knowledge, medical conditions, treatments, or educational medical content.
+
+Examples of database questions: "How many cardiologists are available?", "What diseases cause chest pain?", "Show me appointments for today"
+Examples of health questions: "What are symptoms of diabetes?", "How is hypertension treated?", "What is pneumonia?"
+
+DO NOT return anything else. No explanations.
+
+Question: ${question}
+`;
+
+  const response = await openAIClient.chat.completions.create({
+    model: "gpt-35-turbo",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0,
+  });
+
+  return response.choices[0].message.content.trim().toLowerCase();
+}
 
 // Function to convert English to SQL
 async function englishToSql(question) {
@@ -277,6 +354,7 @@ async function englishToSql(question) {
 
   return sql;
 }
+
 // Function to execute SQL query
 async function runQuery(sqlQuery) {
   try {
@@ -339,8 +417,15 @@ async function generateResultSummary(question, results) {
 
 // Function to answer general health questions using OpenAI
 async function answerHealthQuestion(question) {
+  // First check if the question is medical/health-related
+  const isMedical = await isMedicalQuestion(question);
+
+  if (!isMedical) {
+    return "I'm a medical assistant designed to help with health and medical-related questions only. Please ask about medical conditions, symptoms, treatments, healthcare providers, or other health-related topics.";
+  }
+
   const prompt = `
-  You are a helpful and knowledgeable medical assistant created by Rehan, an assoicate software engineer . Your purpose is to assist medical database queries and health information. Answer the following health-related question in a clear, concise, and accurate manner. 
+  You are a helpful and knowledgeable medical assistant created by Rehan, an associate software engineer. Your purpose is to assist medical database queries and health information. Answer the following health-related question in a clear, concise, and accurate manner. 
   If the question is about symptoms, treatments, medications, ICD codes, CPT codes, or general health, provide an informative answer. 
   If you don't know the answer, say so. Keep responses brief but informative (2-3 sentences maximum).
 
@@ -354,27 +439,4 @@ async function answerHealthQuestion(question) {
   });
 
   return response.choices[0].message.content.trim();
-}
-
-// Determine whether the question is a database query or a health query using AI
-async function classifyQuestion(question) {
-  const prompt = `
-You are an expert in medical software and healthcare knowledge. Your task is to classify the following question.
-
-Respond only with:
-- "database" if the question should be answered using a SQL query from a medical database (like patient, provider, encounter, etc.),
-- "health" if the question is about general health knowledge, medical conditions, ICD/CPT codes, symptoms, or treatments.
-
-DO NOT return anything else. No explanations.
-
-Question: ${question}
-`;
-
-  const response = await openAIClient.chat.completions.create({
-    model: "gpt-35-turbo",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0,
-  });
-
-  return response.choices[0].message.content.trim().toLowerCase();
 }

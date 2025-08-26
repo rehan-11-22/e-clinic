@@ -12,8 +12,44 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
   const inputRef = useRef(null);
   const recognitionRef = useRef(null);
 
+  // Load messages from sessionStorage on component mount
+  useEffect(() => {
+    const savedMessages = sessionStorage.getItem("zeecare-chat-messages");
+    const savedChatState = sessionStorage.getItem("zeecare-chat-open");
+
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages);
+        setMessages(parsedMessages);
+      } catch (error) {
+        console.error("Error parsing saved messages:", error);
+      }
+    }
+
+    if (savedChatState === "true") {
+      setIsChatOpen(true);
+    }
+  }, []);
+
+  // Save messages to sessionStorage whenever messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      sessionStorage.setItem("zeecare-chat-messages", JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  // Save chat open state to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("zeecare-chat-open", isChatOpen.toString());
+  }, [isChatOpen]);
+
   const toggleChat = () => {
     setIsChatOpen(!isChatOpen);
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+    sessionStorage.removeItem("zeecare-chat-messages");
   };
 
   // Initialize speech recognition
@@ -157,9 +193,22 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
           <div className="zeecare-chat-modal-content">
             <div className="zeecare-chat-modal-header">
               <h3>E-Cure Medical Assistant</h3>
-              <button className="zeecare-close-btn" onClick={toggleChat}>
-                <X size={20} color="white" />
-              </button>
+              <div
+                style={{ display: "flex", gap: "8px", alignItems: "center" }}
+              >
+                {messages.length > 0 && (
+                  <button
+                    className="zeecare-clear-btn"
+                    onClick={clearChat}
+                    title="Clear chat history"
+                  >
+                    Clear
+                  </button>
+                )}
+                <button className="zeecare-close-btn" onClick={toggleChat}>
+                  <X size={20} color="white" />
+                </button>
+              </div>
             </div>
 
             <div className="zeecare-chat-modal-body">
@@ -332,6 +381,21 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
           margin: 0;
           font-size: 16px;
           font-weight: 600;
+        }
+
+        .zeecare-clear-btn {
+          background: rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .zeecare-clear-btn:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
 
         .zeecare-close-btn {
