@@ -6,8 +6,17 @@ cloudinary.v2.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-const PORT = process.env.PORT;
 
-app.listen(PORT, () => {
-  console.log(`Server listening at port ${PORT}`);
-});
+// For Vercel, we need to export the app as a serverless function
+// Don't use app.listen() in serverless environments
+
+// For local development only
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server listening at port ${PORT}`);
+  });
+}
+
+// Export the Express app for Vercel
+export default app;
