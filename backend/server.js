@@ -1,14 +1,12 @@
 import app from "./app.js";
 import cloudinary from "cloudinary";
 
+// Configure Cloudinary
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
-// For Vercel, we need to export the app as a serverless function
-// Don't use app.listen() in serverless environments
 
 // For local development only
 if (process.env.NODE_ENV !== "production") {
@@ -18,5 +16,5 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Export the Express app for Vercel
+// Export the Express app for Vercel serverless functions
 export default app;
