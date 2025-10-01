@@ -3,128 +3,43 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import fileUpload from "express-fileupload";
-import { errorMiddleware } from "./middlewares/error.js";
-import messageRouter from "./router/messageRouter.js";
-import userRouter from "./router/userRouter.js";
-import appointmentRouter from "./router/appointmentRouter.js";
-import emailRouter from "./router/emailRouter.js";
-import sql from "mssql";
-import { AzureOpenAI } from "openai";
 
 // Load environment variables first
 dotenv.config();
 
 const app = express();
 
-// Global connection pool (reused across invocations)
-let pool = null;
+// Simple CORS - allow all for now
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
+  })
+);
 
-// Initialize OpenAI client
-let openAIClient = null;
-
-const initializeOpenAI = () => {
-  try {
-    if (
-      !openAIClient &&
-      process.env.AZURE_OPENAI_ENDPOINT &&
-      process.env.AZURE_OPENAI_KEY
-    ) {
-      openAIClient = new AzureOpenAI({
-        endpoint: process.env.AZURE_OPENAI_ENDPOINT,
-        apiKey: process.env.AZURE_OPENAI_KEY,
-        apiVersion: process.env.AZURE_OPENAI_VERSION || "2024-02-15-preview",
-        deployment: process.env.AZURE_OPENAI_DEPLOYMENT,
-      });
-      console.log("OpenAI client initialized successfully");
-    }
-  } catch (error) {
-    console.error("Failed to initialize OpenAI client:", error);
-  }
-};
-
-// SQL Server configuration
-const dbConfig = {
-  user: process.env.SQL_USER,
-  password: process.env.SQL_PASSWORD,
-  server: process.env.SQL_SERVER,
-  database: process.env.SQL_DATABASE,
-  options: {
-    encrypt: true,
-    trustServerCertificate: true,
-    enableArithAbort: true,
-  },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000,
-  },
-  connectionTimeout: 30000,
-  requestTimeout: 30000,
-};
-
-// Get or create SQL connection pool
-async function getPool() {
-  if (!pool) {
-    try {
-      pool = await sql.connect(dbConfig);
-      console.log("Database pool created");
-    } catch (err) {
-      console.error("Database connection failed:", err);
-      throw err;
-    }
-  }
-  return pool;
-}
-
-// CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      process.env.DASHBOARD_URL,
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "https://localhost:3000",
-      "https://localhost:5173",
-    ].filter(Boolean);
-
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
-
-// Middleware
+// Basic middleware
 app.use(cookieParser());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// File upload middleware - serverless compatible
+// File upload middleware
 app.use(
   fileUpload({
     useTempFiles: true,
     tempFileDir: "/tmp/",
     limits: { fileSize: 50 * 1024 * 1024 },
     abortOnLimit: true,
-    createParentPath: true,
-    safeFileNames: true,
-    preserveExtension: true,
   })
 );
 
-// Health check endpoint
+// Health check - this should work first
 app.get("/", (req, res) => {
   res.json({
     message: "Welcome to the Medical Query API!",
     status: "OK",
     timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV,
   });
 });
 
@@ -132,24 +47,112 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
     message: "Medical Query API is running",
-    openai: !!openAIClient,
-    database: !!process.env.SQL_SERVER,
+    hasOpenAIEndpoint: !!process.env.AZURE_OPENAI_ENDPOINT,
+    hasOpenAIKey: !!process.env.AZURE_OPENAI_KEY,
+    hasSQLServer: !!process.env.SQL_SERVER,
   });
 });
 
-// API Routes
-app.use("/api/v1/message", messageRouter);
-app.use("/api/v1/user", userRouter);
-app.use("/api/v1/appointment", appointmentRouter);
-app.use("/api/v1/email", emailRouter);
+// Lazy load dependencies
+let sql = null;
+let AzureOpenAI = null;
+let openAIClient = null;
+let pool = null;
+
+// Load SQL and OpenAI only when needed
+async function initializeDependencies() {
+  if (!sql) {
+    const sqlModule = await import("mssql");
+    sql = sqlModule.default;
+  }
+
+  if (!AzureOpenAI) {
+    const openaiModule = await import("openai");
+    AzureOpenAI = openaiModule.AzureOpenAI;
+  }
+
+  if (
+    !openAIClient &&
+    process.env.AZURE_OPENAI_ENDPOINT &&
+    process.env.AZURE_OPENAI_KEY
+  ) {
+    try {
+      openAIClient = new AzureOpenAI({
+        endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+        apiKey: process.env.AZURE_OPENAI_KEY,
+        apiVersion: process.env.AZURE_OPENAI_VERSION || "2024-02-15-preview",
+        deployment: process.env.AZURE_OPENAI_DEPLOYMENT,
+      });
+      console.log("OpenAI client initialized");
+    } catch (error) {
+      console.error("Failed to initialize OpenAI:", error.message);
+    }
+  }
+}
+
+// Get SQL pool
+async function getPool() {
+  if (!pool) {
+    await initializeDependencies();
+
+    const dbConfig = {
+      user: process.env.SQL_USER,
+      password: process.env.SQL_PASSWORD,
+      server: process.env.SQL_SERVER,
+      database: process.env.SQL_DATABASE,
+      options: {
+        encrypt: true,
+        trustServerCertificate: true,
+        enableArithAbort: true,
+      },
+      pool: {
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000,
+      },
+      connectionTimeout: 30000,
+      requestTimeout: 30000,
+    };
+
+    pool = await sql.connect(dbConfig);
+    console.log("Database pool created");
+  }
+  return pool;
+}
+
+// API Routes - only load if they exist
+try {
+  const messageRouter = await import("./router/messageRouter.js");
+  app.use("/api/v1/message", messageRouter.default);
+} catch (error) {
+  console.log("messageRouter not available:", error.message);
+}
+
+try {
+  const userRouter = await import("./router/userRouter.js");
+  app.use("/api/v1/user", userRouter.default);
+} catch (error) {
+  console.log("userRouter not available:", error.message);
+}
+
+try {
+  const appointmentRouter = await import("./router/appointmentRouter.js");
+  app.use("/api/v1/appointment", appointmentRouter.default);
+} catch (error) {
+  console.log("appointmentRouter not available:", error.message);
+}
+
+try {
+  const emailRouter = await import("./router/emailRouter.js");
+  app.use("/api/v1/email", emailRouter.default);
+} catch (error) {
+  console.log("emailRouter not available:", error.message);
+}
 
 // Medical Query endpoint
 app.post("/api/medical-query", async (req, res) => {
   try {
-    // Initialize OpenAI if not already done
-    if (!openAIClient) {
-      initializeOpenAI();
-    }
+    await initializeDependencies();
 
     const { question } = req.body;
 
@@ -166,8 +169,7 @@ app.post("/api/medical-query", async (req, res) => {
     if (!openAIClient) {
       return res.status(500).json({
         error: "OpenAI service not available",
-        details:
-          "OpenAI client initialization failed. Please check configuration.",
+        details: "Please check OpenAI configuration.",
       });
     }
 
@@ -235,16 +237,12 @@ app.post("/api/medical-query", async (req, res) => {
     console.error("Error in /api/medical-query:", error);
     return res.status(500).json({
       error: "An error occurred while processing your request",
-      details:
-        process.env.NODE_ENV === "development"
-          ? error.message
-          : "Internal server error",
+      details: error.message,
     });
   }
 });
 
 // Helper Functions
-
 async function isMedicalQuestion(question) {
   try {
     const prompt = `You are an expert medical content validator. Determine if the following question is related to:
@@ -313,39 +311,14 @@ async function englishToSql(question) {
   try {
     const prompt = `You are a medical database expert. Convert this English question to SQL Server T-SQL.
 
-IMPORTANT: Use the exact table names as defined below.
-Database schema for E-Cure-Hub:
+Database schema:
+- Table 'medical_specialties': id, name, description, created_at
+- Table 'doctors': id, firstName, lastName, fullName, specialtyId, experience_years, qualification, is_available, rating, created_at
+- Table 'veterinary_doctors': id, firstName, lastName, fullName, specialization, experience_years, qualification, is_available, rating, created_at
 
-  - Table 'medical_specialties':
-    * id (primary key, INT IDENTITY)
-    * name (VARCHAR(100), NOT NULL, UNIQUE)
-    * description (TEXT)
-    * created_at (DATETIME, DEFAULT GETDATE())
+SECURITY: Do NOT include sensitive fields (email, phoneNumber, address, city, state, zipCode, consultation_fee)
 
-  - Table 'doctors':
-    * id (primary key, INT IDENTITY)
-    * firstName (VARCHAR(100), NOT NULL)
-    * lastName (VARCHAR(100), NOT NULL)
-    * fullName (computed column: firstName + ' ' + lastName)
-    * specialtyId (INT, foreign key to medical_specialties.id)
-    * experience_years (INT)
-    * qualification (VARCHAR(500))
-    * is_available (BIT, DEFAULT 1)
-    * rating (DECIMAL(3,2), DEFAULT 0.00)
-    * created_at (DATETIME, DEFAULT GETDATE())
-    
-    IMPORTANT: Do NOT include or query these sensitive fields: email, phoneNumber, address, city, state, zipCode, consultation_fee
-
-  - Table 'veterinary_doctors':
-    * id, firstName, lastName, fullName, specialization, experience_years, qualification, is_available, rating, created_at
-    
-    IMPORTANT: Do NOT include sensitive fields
-
-IMPORTANT SECURITY RULES:
-1. NEVER include sensitive doctor information
-2. Use SQL Server T-SQL syntax
-
-Only respond with the SQL query, nothing else.
+Only respond with the SQL query.
 
 Question: ${question}`;
 
@@ -391,16 +364,13 @@ async function generateResultSummary(question, results) {
   try {
     const resultCount = Array.isArray(results) ? results.length : 0;
 
-    const prompt = `You are a medical database assistant. Summarize these query results in a clear, concise way.
+    const prompt = `You are a medical database assistant. Summarize these query results in 2-3 sentences.
 
-IMPORTANT: The actual number of results is ${resultCount}.
+The query returned ${resultCount} results.
 
 Original question: ${question}
 
-Query results:
-${JSON.stringify(results, null, 2)}
-
-Provide a brief summary (2-3 sentences) that states there are ${resultCount} results and highlights key findings.`;
+Results: ${JSON.stringify(results, null, 2)}`;
 
     const response = await openAIClient.chat.completions.create({
       model: "gpt-35-turbo",
@@ -409,16 +379,11 @@ Provide a brief summary (2-3 sentences) that states there are ${resultCount} res
       max_tokens: 150,
     });
 
-    let summary = response.choices[0].message.content.trim();
-    if (!summary.includes(`${resultCount}`)) {
-      summary = summary.replace(/\d+/, `${resultCount}`);
-    }
-
-    return summary;
+    return response.choices[0].message.content.trim();
   } catch (error) {
     console.error("Error in generateResultSummary:", error);
     const resultCount = Array.isArray(results) ? results.length : 0;
-    return `Found ${resultCount} results for your query about "${question}".`;
+    return `Found ${resultCount} results for your query.`;
   }
 }
 
@@ -427,12 +392,12 @@ async function answerHealthQuestion(question) {
     const isMedical = await isMedicalQuestion(question);
 
     if (!isMedical) {
-      return "I'm a medical assistant designed to help with health and medical-related questions only. Please ask about medical conditions, symptoms, treatments, healthcare providers, or other health-related topics.";
+      return "I'm a medical assistant designed to help with health and medical-related questions only.";
     }
 
-    const prompt = `You are a helpful medical assistant. Answer the following health question in 2-3 sentences.
+    const prompt = `You are a helpful medical assistant. Answer this health question in 2-3 sentences.
 
-IMPORTANT: Include a disclaimer that this is for informational purposes only and users should consult healthcare professionals for medical advice.
+Include a disclaimer about consulting healthcare professionals.
 
 Question: ${question}`;
 
@@ -446,12 +411,25 @@ Question: ${question}`;
     return response.choices[0].message.content.trim();
   } catch (error) {
     console.error("Error in answerHealthQuestion:", error);
-    return "I'm sorry, I'm having trouble processing your health question at the moment. Please try again later.";
+    return "I'm having trouble processing your question. Please try again.";
   }
 }
 
-// Error handling middleware
-app.use(errorMiddleware);
+// Error handling middleware - load if exists
+try {
+  const errorMiddlewareModule = await import("./middlewares/error.js");
+  app.use(errorMiddlewareModule.errorMiddleware);
+} catch (error) {
+  console.log("errorMiddleware not available:", error.message);
+  // Default error handler
+  app.use((err, req, res, next) => {
+    console.error("Error:", err);
+    res.status(500).json({
+      error: "Internal server error",
+      message: err.message,
+    });
+  });
+}
 
 // 404 handler
 app.use("*", (req, res) => {
