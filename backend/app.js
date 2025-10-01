@@ -131,11 +131,11 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// API Routes
-app.use("/api/v1/message", messageRouter);
-app.use("/api/v1/user", userRouter);
-app.use("/api/v1/appointment", appointmentRouter);
-app.use("/api/v1/email", emailRouter);
+// API Routes - TEMPORARILY COMMENTED OUT FOR TESTING
+// app.use("/api/v1/message", messageRouter);
+// app.use("/api/v1/user", userRouter);
+// app.use("/api/v1/appointment", appointmentRouter);
+// app.use("/api/v1/email", emailRouter);
 
 // Medical Query endpoint
 app.post("/api/medical-query", async (req, res) => {
