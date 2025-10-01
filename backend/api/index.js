@@ -3,11 +3,11 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import fileUpload from "express-fileupload";
-import { errorMiddleware } from "./middlewares/error.js";
-import messageRouter from "./router/messageRouter.js";
-import userRouter from "./router/userRouter.js";
-import appointmentRouter from "./router/appointmentRouter.js";
-import emailRouter from "./router/emailRouter.js";
+import { errorMiddleware } from "../middlewares/error.js";
+import messageRouter from "../router/messageRouter.js";
+import userRouter from "../router/userRouter.js";
+import appointmentRouter from "../router/appointmentRouter.js";
+import emailRouter from "../router/emailRouter.js";
 import sql from "mssql";
 import { AzureOpenAI } from "openai";
 
