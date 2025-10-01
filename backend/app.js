@@ -16,25 +16,33 @@ dotenv.config();
 
 const app = express();
 
-// Initialize OpenAI client with error handling
-let openAIClient;
-try {
-  if (process.env.AZURE_OPENAI_ENDPOINT && process.env.AZURE_OPENAI_KEY) {
-    openAIClient = new AzureOpenAI({
-      endpoint: process.env.AZURE_OPENAI_ENDPOINT,
-      apiKey: process.env.AZURE_OPENAI_KEY,
-      apiVersion: process.env.AZURE_OPENAI_VERSION || "2024-02-15-preview",
-      deployment: process.env.AZURE_OPENAI_DEPLOYMENT,
-    });
-    console.log("OpenAI client initialized successfully");
-  } else {
-    console.warn("OpenAI environment variables missing");
-  }
-} catch (error) {
-  console.error("Failed to initialize OpenAI client:", error);
-}
+// Global connection pool (reused across invocations)
+let pool = null;
 
-// SQL Server configuration - singleton connection pool
+// Initialize OpenAI client
+let openAIClient = null;
+
+const initializeOpenAI = () => {
+  try {
+    if (
+      !openAIClient &&
+      process.env.AZURE_OPENAI_ENDPOINT &&
+      process.env.AZURE_OPENAI_KEY
+    ) {
+      openAIClient = new AzureOpenAI({
+        endpoint: process.env.AZURE_OPENAI_ENDPOINT,
+        apiKey: process.env.AZURE_OPENAI_KEY,
+        apiVersion: process.env.AZURE_OPENAI_VERSION || "2024-02-15-preview",
+        deployment: process.env.AZURE_OPENAI_DEPLOYMENT,
+      });
+      console.log("OpenAI client initialized successfully");
+    }
+  } catch (error) {
+    console.error("Failed to initialize OpenAI client:", error);
+  }
+};
+
+// SQL Server configuration
 const dbConfig = {
   user: process.env.SQL_USER,
   password: process.env.SQL_PASSWORD,
@@ -54,21 +62,19 @@ const dbConfig = {
   requestTimeout: 30000,
 };
 
-// Singleton SQL pool for serverless
-let sqlPool = null;
-const getSqlPool = async () => {
-  if (!sqlPool) {
+// Get or create SQL connection pool
+async function getPool() {
+  if (!pool) {
     try {
-      sqlPool = await sql.connect(dbConfig);
-      console.log("SQL Server connection pool created");
+      pool = await sql.connect(dbConfig);
+      console.log("Database pool created");
     } catch (err) {
-      console.error("Failed to create SQL pool:", err);
-      sqlPool = null;
+      console.error("Database connection failed:", err);
       throw err;
     }
   }
-  return sqlPool;
-};
+  return pool;
+}
 
 // CORS configuration
 const corsOptions = {
@@ -131,15 +137,20 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// API Routes - TEMPORARILY COMMENTED OUT FOR TESTING
-// app.use("/api/v1/message", messageRouter);
-// app.use("/api/v1/user", userRouter);
-// app.use("/api/v1/appointment", appointmentRouter);
-// app.use("/api/v1/email", emailRouter);
+// API Routes
+app.use("/api/v1/message", messageRouter);
+app.use("/api/v1/user", userRouter);
+app.use("/api/v1/appointment", appointmentRouter);
+app.use("/api/v1/email", emailRouter);
 
 // Medical Query endpoint
 app.post("/api/medical-query", async (req, res) => {
   try {
+    // Initialize OpenAI if not already done
+    if (!openAIClient) {
+      initializeOpenAI();
+    }
+
     const { question } = req.body;
 
     if (
@@ -232,18 +243,8 @@ app.post("/api/medical-query", async (req, res) => {
   }
 });
 
-// Error handling middleware
-app.use(errorMiddleware);
+// Helper Functions
 
-// 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({
-    error: "Route not found",
-    message: `Cannot ${req.method} ${req.originalUrl}`,
-  });
-});
-
-// Function to check if a question is medical/health-related
 async function isMedicalQuestion(question) {
   try {
     const prompt = `You are an expert medical content validator. Determine if the following question is related to:
@@ -276,7 +277,6 @@ Question: ${question}`;
   }
 }
 
-// Determine whether the question is a database query or a health query
 async function classifyQuestion(question) {
   try {
     const isMedical = await isMedicalQuestion(question);
@@ -288,11 +288,10 @@ async function classifyQuestion(question) {
     const prompt = `You are an expert in medical software and healthcare knowledge. Your task is to classify the following medical/health question.
 
 Respond only with:
-- "database" if the question should be answered using a SQL query from a medical database
-- "health" if the question is about general health knowledge
+- "database" if the question should be answered using a SQL query from a medical database (like finding doctors, appointments, diseases, symptoms data),
+- "health" if the question is about general health knowledge, medical conditions, treatments, or educational medical content.
 
-Examples of database questions: "How many cardiologists are available?", "Show me appointments for today"
-Examples of health questions: "What are symptoms of diabetes?", "How is hypertension treated?"
+DO NOT return anything else. No explanations.
 
 Question: ${question}`;
 
@@ -310,31 +309,43 @@ Question: ${question}`;
   }
 }
 
-// Function to convert English to SQL
 async function englishToSql(question) {
   try {
     const prompt = `You are a medical database expert. Convert this English question to SQL Server T-SQL.
 
+IMPORTANT: Use the exact table names as defined below.
 Database schema for E-Cure-Hub:
 
   - Table 'medical_specialties':
-    * id, name, description, created_at
+    * id (primary key, INT IDENTITY)
+    * name (VARCHAR(100), NOT NULL, UNIQUE)
+    * description (TEXT)
+    * created_at (DATETIME, DEFAULT GETDATE())
 
   - Table 'doctors':
-    * id, firstName, lastName, fullName, specialtyId, experience_years, qualification, is_available, rating, created_at
+    * id (primary key, INT IDENTITY)
+    * firstName (VARCHAR(100), NOT NULL)
+    * lastName (VARCHAR(100), NOT NULL)
+    * fullName (computed column: firstName + ' ' + lastName)
+    * specialtyId (INT, foreign key to medical_specialties.id)
+    * experience_years (INT)
+    * qualification (VARCHAR(500))
+    * is_available (BIT, DEFAULT 1)
+    * rating (DECIMAL(3,2), DEFAULT 0.00)
+    * created_at (DATETIME, DEFAULT GETDATE())
     
-    IMPORTANT: Do NOT include or query: email, phoneNumber, address, city, state, zipCode, consultation_fee
+    IMPORTANT: Do NOT include or query these sensitive fields: email, phoneNumber, address, city, state, zipCode, consultation_fee
 
   - Table 'veterinary_doctors':
     * id, firstName, lastName, fullName, specialization, experience_years, qualification, is_available, rating, created_at
     
-    IMPORTANT: Do NOT include or query: email, phoneNumber, address, city, state, zipCode, consultation_fee
+    IMPORTANT: Do NOT include sensitive fields
 
-SECURITY RULES:
-1. NEVER include sensitive fields
-2. Use SQL Server T-SQL syntax only
+IMPORTANT SECURITY RULES:
+1. NEVER include sensitive doctor information
+2. Use SQL Server T-SQL syntax
 
-Only respond with the SQL query.
+Only respond with the SQL query, nothing else.
 
 Question: ${question}`;
 
@@ -348,7 +359,7 @@ Question: ${question}`;
     let sqlQuery = response.choices[0].message.content.trim();
     sqlQuery = sqlQuery.replace(/```sql\s*/g, "").replace(/```\s*/g, "");
 
-    // Remove sensitive fields
+    // Clean sensitive fields
     sqlQuery = sqlQuery.replace(
       /,\s*(email|phoneNumber|address|city|state|zipCode|consultation_fee)\b/gi,
       ""
@@ -365,11 +376,10 @@ Question: ${question}`;
   }
 }
 
-// Function to execute SQL query - using singleton pool
 async function runQuery(sqlQuery) {
   try {
-    const pool = await getSqlPool();
-    const result = await pool.request().query(sqlQuery);
+    const currentPool = await getPool();
+    const result = await currentPool.request().query(sqlQuery);
     return result.recordset || [];
   } catch (err) {
     console.error("SQL Server error:", err);
@@ -377,24 +387,20 @@ async function runQuery(sqlQuery) {
   }
 }
 
-// Function to generate a natural language summary
 async function generateResultSummary(question, results) {
   try {
     const resultCount = Array.isArray(results) ? results.length : 0;
 
-    const prompt = `You are a medical database assistant. Summarize these query results clearly.
+    const prompt = `You are a medical database assistant. Summarize these query results in a clear, concise way.
 
-IMPORTANT: There are ${resultCount} results.
+IMPORTANT: The actual number of results is ${resultCount}.
 
 Original question: ${question}
-Results: ${JSON.stringify(results, null, 2)}
 
-Provide a brief summary (2-3 sentences) that:
-1. States there are ${resultCount} results
-2. Answers the question directly
-3. Highlights key information
+Query results:
+${JSON.stringify(results, null, 2)}
 
-Keep it concise and natural.`;
+Provide a brief summary (2-3 sentences) that states there are ${resultCount} results and highlights key findings.`;
 
     const response = await openAIClient.chat.completions.create({
       model: "gpt-35-turbo",
@@ -403,27 +409,30 @@ Keep it concise and natural.`;
       max_tokens: 150,
     });
 
-    return response.choices[0].message.content.trim();
+    let summary = response.choices[0].message.content.trim();
+    if (!summary.includes(`${resultCount}`)) {
+      summary = summary.replace(/\d+/, `${resultCount}`);
+    }
+
+    return summary;
   } catch (error) {
     console.error("Error in generateResultSummary:", error);
     const resultCount = Array.isArray(results) ? results.length : 0;
-    return `Found ${resultCount} results for your query.`;
+    return `Found ${resultCount} results for your query about "${question}".`;
   }
 }
 
-// Function to answer general health questions
 async function answerHealthQuestion(question) {
   try {
     const isMedical = await isMedicalQuestion(question);
 
     if (!isMedical) {
-      return "I'm a medical assistant designed to help with health and medical-related questions only.";
+      return "I'm a medical assistant designed to help with health and medical-related questions only. Please ask about medical conditions, symptoms, treatments, healthcare providers, or other health-related topics.";
     }
 
-    const prompt = `You are a helpful medical assistant. Answer this health question clearly and concisely.
+    const prompt = `You are a helpful medical assistant. Answer the following health question in 2-3 sentences.
 
-Keep responses brief (2-3 sentences).
-Always include a disclaimer about consulting healthcare professionals.
+IMPORTANT: Include a disclaimer that this is for informational purposes only and users should consult healthcare professionals for medical advice.
 
 Question: ${question}`;
 
@@ -437,8 +446,19 @@ Question: ${question}`;
     return response.choices[0].message.content.trim();
   } catch (error) {
     console.error("Error in answerHealthQuestion:", error);
-    return "I'm having trouble processing your question. Please try again.";
+    return "I'm sorry, I'm having trouble processing your health question at the moment. Please try again later.";
   }
 }
+
+// Error handling middleware
+app.use(errorMiddleware);
+
+// 404 handler
+app.use("*", (req, res) => {
+  res.status(404).json({
+    error: "Route not found",
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+  });
+});
 
 export default app;
