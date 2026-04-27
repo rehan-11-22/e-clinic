@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect, memo } from "react";
 import { useDoctors } from "../context/DoctorsContext";
 
 const fallbackImage = "/contact.png"; // Ensure it's in the public folder
@@ -16,23 +16,62 @@ const departments = [
   "Veterinary",
 ];
 
+// Production-Level Optimization: Memoized Doctor Card Component
+const DoctorCard = memo(({ element }) => {
+  // Optimize image size to prevent massive scroll jank from large images
+  let imageUrl = element.docAvatar?.url || fallbackImage;
+  if (imageUrl.includes("cloudinary.com") && imageUrl.includes("/upload/")) {
+    imageUrl = imageUrl.replace("/upload/", "/upload/w_250,h_250,c_fill,q_auto,f_auto/");
+  }
+
+  return (
+    <div className="doctor-card" style={{ willChange: "transform", transform: "translateZ(0)" }}>
+      <img
+        src={imageUrl}
+        alt="doctor avatar"
+        onError={(e) => (e.target.src = fallbackImage)}
+      />
+      <h5>{`${element.firstName} ${element.lastName}`}</h5>
+      <div className="doctor-details">
+        <p>
+          Department: <span>{element.doctorDepartment || "N/A"}</span>
+        </p>
+        <p>
+          Gender: <span>{element.gender || "N/A"}</span>
+        </p>
+      </div>
+    </div>
+  );
+});
+DoctorCard.displayName = "DoctorCard";
+
 const Doctors = () => {
-  const { doctors } = useDoctors();
+  const { doctors, isLoading } = useDoctors();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
-  const [visibleCount, setVisibleCount] = useState(8); // Show 6 doctors initially
+  const [visibleCount, setVisibleCount] = useState(8); // Show 8 doctors initially
+  const [isRendering, setIsRendering] = useState(true);
 
-  // Filter logic
-  const filteredDoctors = doctors.filter((doc) => {
-    const matchesDepartment = selectedDepartment
-      ? doc.doctorDepartment?.toLowerCase() === selectedDepartment.toLowerCase()
-      : true;
-    const matchesSearch = `${doc.firstName} ${doc.lastName}`
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  // Defer heavy rendering to prevent navigation freeze
+  useEffect(() => {
+    const timer = setTimeout(() => setIsRendering(false), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
-    return matchesDepartment && matchesSearch;
-  });
+  // Filter logic (Wrapped in useMemo for production-level performance)
+  const filteredDoctors = useMemo(() => {
+    if (!doctors) return [];
+    return doctors.filter((doc) => {
+      const matchesDepartment = selectedDepartment
+        ? doc.doctorDepartment?.toLowerCase() === selectedDepartment.toLowerCase()
+        : true;
+      const matchesSearch = `${doc.firstName} ${doc.lastName}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+      return matchesDepartment && matchesSearch;
+    });
+  }, [doctors, selectedDepartment, searchTerm]);
 
   const visibleDoctors = filteredDoctors.slice(0, visibleCount);
 
@@ -60,7 +99,6 @@ const Doctors = () => {
           style={{
             padding: "1rem 0.2rem 1rem 0.2rem",
             borderRadius: "5px",
-            // border: "1.4px solid black",
           }}
         >
           <option value="">All Departments</option>
@@ -73,24 +111,17 @@ const Doctors = () => {
       </div>
 
       <div className="doctor-banner">
-        {visibleDoctors.length > 0 ? (
+        {isLoading || isRendering ? (
+          <div style={{ width: "100%", gridColumn: "1 / -1", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "300px", flexDirection: "column", gap: "15px" }}>
+            <div className="spinner" style={{ width: "50px", height: "50px", border: "5px solid #f3f3f3", borderTop: "5px solid #271776ca", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+            <h3 style={{ color: "gray" }}>Loading Doctors...</h3>
+            <style>
+              {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
+            </style>
+          </div>
+        ) : visibleDoctors.length > 0 ? (
           visibleDoctors.map((element, index) => (
-            <div className="doctor-card" key={element._id || index}>
-              <img
-                src={element.docAvatar?.url || fallbackImage}
-                alt="doctor avatar"
-                onError={(e) => (e.target.src = fallbackImage)}
-              />
-              <h5>{`${element.firstName} ${element.lastName}`}</h5>
-              <div className="doctor-details">
-                <p>
-                  Department: <span>{element.doctorDepartment || "N/A"}</span>
-                </p>
-                <p>
-                  Gender: <span>{element.gender || "N/A"}</span>
-                </p>
-              </div>
-            </div>
+            <DoctorCard key={element._id || index} element={element} />
           ))
         ) : (
           <h1>No Doctors Found!</h1>

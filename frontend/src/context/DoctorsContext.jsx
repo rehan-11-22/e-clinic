@@ -8,6 +8,7 @@ const DoctorsContext = createContext();
 export const DoctorsProvider = ({ children }) => {
   const [doctors, setDoctors] = useState([]);
   const [loaded, setLoaded] = useState(false); // Prevent re-fetching
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchDoctors = async () => {
@@ -22,14 +23,15 @@ export const DoctorsProvider = ({ children }) => {
         toast.error(
           error.response?.data?.message || "Failed to fetch doctors."
         );
+      } finally {
+        setIsLoading(false);
       }
     };
-
     fetchDoctors();
   }, [loaded]);
 
   return (
-    <DoctorsContext.Provider value={{ doctors }}>
+    <DoctorsContext.Provider value={{ doctors, isLoading }}>
       {children}
     </DoctorsContext.Provider>
   );
