@@ -8,7 +8,7 @@ import messageRouter from "./router/messageRouter.js";
 import userRouter from "./router/userRouter.js";
 import appointmentRouter from "./router/appointmentRouter.js";
 import emailRouter from "./router/emailRouter.js";
-import sql from "mssql";
+// mssql is dynamically imported inside getSqlPool() to avoid Vercel crash
 import { AzureOpenAI } from "openai";
 import { dbConnection } from "./database/dbConnection.js";
 
@@ -63,7 +63,8 @@ let sqlPool = null;
 const getSqlPool = async () => {
   if (!sqlPool) {
     try {
-      sqlPool = await sql.connect(dbConfig);
+      const sql = await import("mssql");
+      sqlPool = await sql.default.connect(dbConfig);
       console.log("SQL Server connection pool created");
     } catch (err) {
       console.error("Failed to create SQL pool:", err);

@@ -14,7 +14,7 @@ export const DoctorsProvider = ({ children }) => {
       if (loaded) return; // Prevent duplicate fetch
       try {
         const { data } = await axios.get(
-          "http://localhost:4000/api/v1/user/doctors"
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/doctors`
         );
         setDoctors(data.doctors);
         setLoaded(true);

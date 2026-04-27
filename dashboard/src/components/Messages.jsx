@@ -16,7 +16,7 @@ const Messages = () => {
     const fetchMessages = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:4000/api/v1/message/getall",
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/message/getall`,
           { withCredentials: true }
         );
         setMessages(data.messages);
@@ -31,7 +31,7 @@ const Messages = () => {
   const handleMarkAsRead = async (id) => {
     try {
       await axios.put(
-        `http://localhost:4000/api/v1/message/read/${id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/message/read/${id}`,
         {},
         { withCredentials: true }
       );
@@ -50,7 +50,7 @@ const Messages = () => {
   const handleMarkAllAsRead = async () => {
     try {
       await axios.put(
-        "http://localhost:4000/api/v1/message/markallread",
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/message/markallread`,
         {},
         { withCredentials: true }
       );
@@ -73,7 +73,7 @@ const Messages = () => {
   const handleDelete = async () => {
     try {
       await axios.put(
-        `http://localhost:4000/api/v1/message/delete/${messageToDelete}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/message/delete/${messageToDelete}`,
         {},
         { withCredentials: true }
       );
@@ -105,7 +105,7 @@ const Messages = () => {
   const handleDeleteAll = async () => {
     try {
       await axios.put(
-        "http://localhost:4000/api/v1/message/deleteall",
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/message/deleteall`,
         {}, // Empty body
         { withCredentials: true }
       );

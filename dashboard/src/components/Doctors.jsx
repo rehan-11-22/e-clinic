@@ -27,7 +27,7 @@ const Doctors = () => {
     const fetchDoctors = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:4000/api/v1/user/doctors",
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/doctors`,
           { withCredentials: true }
         );
         setDoctors(data.doctors);
@@ -62,7 +62,7 @@ const Doctors = () => {
   const handleDelete = async () => {
     try {
       await axios.delete(
-        `http://localhost:4000/api/v1/user/doctor/delete/${doctorToDelete}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/doctor/delete/${doctorToDelete}`,
         { withCredentials: true }
       );
       setDoctors(doctors.filter((doctor) => doctor._id !== doctorToDelete));
@@ -101,7 +101,7 @@ const Doctors = () => {
       });
 
       const { data } = await axios.put(
-        `http://localhost:4000/api/v1/user/doctor/update/${editingDoctor._id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/doctor/update/${editingDoctor._id}`,
         formDataToSend,
         {
           withCredentials: true,

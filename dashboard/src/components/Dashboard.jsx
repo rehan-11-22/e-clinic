@@ -190,7 +190,7 @@ const Dashboard = () => {
     const fetchAppointments = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:4000/api/v1/appointment/getall",
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/appointment/getall`,
           { withCredentials: true }
         );
         // Sort appointments by date in descending order (newest first)
@@ -209,7 +209,7 @@ const Dashboard = () => {
     const fetchDoctors = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:4000/api/v1/user/doctors",
+          `${import.meta.env.VITE_BACKEND_URL}/api/v1/user/doctors`,
           { withCredentials: true }
         );
         setDoctors(data.doctors);
@@ -231,7 +231,7 @@ const Dashboard = () => {
   const handleConfirmStatusChange = async (slots) => {
     try {
       const { data } = await axios.put(
-        `http://localhost:4000/api/v1/appointment/update/${selectedAppointment._id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/appointment/update/${selectedAppointment._id}`,
         {
           status: selectedStatus,
           ...(slots && { availableSlots: slots }),
@@ -241,7 +241,7 @@ const Dashboard = () => {
 
       // Send email notification
       await axios.post(
-        "http://localhost:4000/api/v1/email/send",
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/email/send`,
         {
           appointmentId: selectedAppointment._id,
           status: selectedStatus,

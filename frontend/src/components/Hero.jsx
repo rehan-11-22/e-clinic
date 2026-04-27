@@ -130,7 +130,7 @@ const Hero = ({ title, imageUrl, paragrapgh }) => {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:4000/api/medical-query", {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/medical-query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
