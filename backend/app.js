@@ -10,9 +10,13 @@ import appointmentRouter from "./router/appointmentRouter.js";
 import emailRouter from "./router/emailRouter.js";
 import sql from "mssql";
 import { AzureOpenAI } from "openai";
+import { dbConnection } from "./database/dbConnection.js";
 
 // Load environment variables first
 dotenv.config();
+
+// Connect to MongoDB
+dbConnection();
 
 const app = express();
 
